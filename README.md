@@ -71,7 +71,7 @@ Click POST /predict → Try it out → Paste the sample JSON:
 Click Execute.
 
 You will receive a response like:
-
+```
 {
   "task_id": "02f240c7-a6e1-4c52-bac7-5419e2595397",
   "message": "Fraud analysis started"
@@ -79,10 +79,10 @@ You will receive a response like:
 ```
 
 2️⃣a Check Task Result (Optional)
-```
+
 If you expose a GET /tasks/{task_id} endpoint, you can query the task status and result using the task ID.
 
-```
+
 
 🔮 Future Improvements
 
