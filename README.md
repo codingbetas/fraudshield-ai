@@ -20,28 +20,28 @@ It supports asynchronous transaction processing with Celery + Redis, stores data
 ## ⚡ Setup Instructions
 
 ```bash
-# Clone the repository
+#Clone the repository
 git clone https://github.com/codingbetas/fraudshield-ai.git
 cd fraudshield-ai
 
-# Create virtual environment
+#Create virtual environment
 python -m venv venv
 venv\Scripts\activate   # Windows
-# source venv/bin/activate  # Mac/Linux
+#source venv/bin/activate  # Mac/Linux
 
-# Install dependencies
+#Install dependencies
 pip install -r requirements.txt
 
-# Start Redis server
+#Start Redis server
 redis-server.exe
 
-# Start Celery worker
+#Start Celery worker
 celery -A app.core.celery_app worker --loglevel=info
 
-# Train ML model (if not already included)
+#Train ML model (if not already included)
 python app/train_model.py
 
-# Run FastAPI server
+#Run FastAPI server
 uvicorn app.main:app --reload
 
 API will run at: http://127.0.0.1:8000
