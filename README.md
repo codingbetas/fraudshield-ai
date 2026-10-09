@@ -13,41 +13,40 @@ Redis-backed metrics — Shares prediction counters between API and Celery worke
 SQLite database — Supports local transaction storage.
 Swagger/OpenAPI — Interactive API documentation and testing.
 🏗️ Architecture
-              Client
-                |
-                | POST /predict
-                v
-          FastAPI API
-        (returns task_id)
-                |
-                | Enqueue task
-                v
-        Redis Task Broker
-                |
-                v
-          Celery Worker
-                |
-         +------+------+
-         |             |
-         v             v
-    Random Forest  Isolation Forest
-         |             |
-         +------+------+
-                |
-                v
-       Risk Assessment
-                |
-                v
-      Prediction Result
-                |
-                v
-        Celery Backend
+                 Client
+                   |
+                   | POST /predict
+                   v
+               FastAPI API
+             (returns task_id)
+                   |
+                   | Enqueue task
+                   v
+             Redis Task Broker
+                   |
+                   v
+              Celery Worker
+                   |
+            +------+------+
+            |             |
+            v             v
+       Random Forest  Isolation Forest
+            |             |
+            +------+------+
+                   |
+                   v
+            Risk Assessment
+                   |
+                   v
+           Prediction Result
+                   |
+                   v
+             Celery Backend
+
 
 Redis also stores shared prediction metrics.
 
-
-Client endpoints
-
+API Endpoints
 Method	Endpoint	Description
 POST	/predict	Submit a prediction task
 GET	/tasks/{task_id}	Retrieve task status and result
@@ -58,13 +57,13 @@ Redis serves as the Celery broker and stores shared metrics. Task-result retriev
 
 📊 Model Performance
 Random Forest — Supervised Classification
-Metric	Reported score
+Metric	Reported Score
 Precision	0.9744
 Recall	0.7755
 F1-score	0.8636
 AUC-ROC	0.9531
 Isolation Forest — Anomaly Detection
-Metric	Reported score
+Metric	Reported Score
 Precision	0.4020
 Recall	0.8163
 F1-score	0.5387
@@ -94,25 +93,18 @@ Important: These are PCA-transformed dataset features, not directly interpretabl
 
 📡 API Usage
 
-Start the application and open:
+Start the application and open the following URLs:
 
 Swagger UI: http://127.0.0.1:8000/docs
 ReDoc: http://127.0.0.1:8000/redoc
 Health check: http://127.0.0.1:8000/
 1. Submit a prediction
-curl -X POST "http://127.0.0.1:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "V14": -1.5,
-    "V10": -1.2,
-    "V12": -2.0,
-    "V4": 1.5,
-    "V17": -1.8,
-    "V3": -1.0,
-    "V11": 1.2,
-    "V16": -0.5
-  }'
+curl -X POST "http://127.0.0.1:8000/predict" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"V14\":-1.5,\"V10\":-1.2,\"V12\":-2.0,\"V4\":1.5,\"V17\":-1.8,\"V3\":-1.0,\"V11\":1.2,\"V16\":-0.5}"
 
+
+The command above uses Windows Command Prompt syntax. For PowerShell, use curl.exe or submit the JSON through Swagger UI.
 
 Example response:
 
@@ -199,9 +191,7 @@ pip install -r requirements.txt
 
 Step 4: Download the dataset
 
-Download the Kaggle Credit Card Fraud Detection dataset:
-
-https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+Download the Kaggle Credit Card Fraud Detection dataset.
 
 Place the CSV file at:
 
@@ -217,7 +207,7 @@ Step 6: Train the models
 python train_model.py
 
 
-The training script should generate:
+The training script should generate the following artifacts:
 
 model/
 ├── fraud_model.pkl
@@ -328,9 +318,7 @@ Implement model versioning and audit logs.
 Introduce configurable risk thresholds and manual-review workflows.
 📄 Dataset
 
-This project uses the Kaggle Credit Card Fraud Detection dataset:
-
-https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+This project uses the Kaggle Credit Card Fraud Detection dataset.
 
 Refer to the dataset's terms and documentation for applicable usage conditions.
 
