@@ -1,9 +1,6 @@
-def calculate_risk(probability):
-
+def calculate_risk(probability: float) -> str:
     if probability > 0.8:
         return "HIGH"
-
     if probability > 0.5:
         return "MEDIUM"
-
     return "LOW"

@@ -1,28 +1,35 @@
-import joblib
 import os
+import json
+import joblib
 import numpy as np
+import pandas as pd   # ← ADD THIS
+
+from app.ai.feature_engineering import build_features, FEATURE_NAMES
 
 MODEL_PATH = os.path.join("model", "fraud_model.pkl")
+METADATA_PATH = os.path.join("model", "MODEL_METADATA.json")
 
-# Load model
-if os.path.exists(MODEL_PATH):
-    model = joblib.load(MODEL_PATH)
-else:
-    raise Exception("Model not found. Please run train_model.py first.")
 
-def predict_fraud(amount, type, oldbalanceOrg, newbalanceOrig):
-    """
-    Predict fraud using trained ML model.
-    """
-    # Simple mapping for type
-    type_mapping = {"TRANSFER": 0, "CASH_OUT": 1, "DEBIT": 2, "PAYMENT": 3}
-    type_encoded = type_mapping.get(type.upper(), 0)
+if not os.path.exists(MODEL_PATH):
+    raise RuntimeError("Fraud model not found. Run train_model.py first.")
 
-    features = np.array([[amount, type_encoded, oldbalanceOrg, newbalanceOrig]])
-    
-    if model:
-        pred = model.predict(features)
-        return bool(pred[0])
-    else:
-        # Default fallback if model not trained
-        return False
+model = joblib.load(MODEL_PATH)
+
+
+if os.path.exists(METADATA_PATH):
+    with open(METADATA_PATH) as f:
+        _metadata = json.load(f)
+    _expected_features = _metadata.get("feature_names", [])
+    if _expected_features and _expected_features != FEATURE_NAMES:
+        raise RuntimeError(
+            "Feature mismatch: model was trained on different features. "
+            "Retrain with train_model.py."
+        )
+
+
+def predict_fraud(features_dict):
+    features = build_features(features_dict)
+    # Preserve feature names by using a DataFrame
+    df = pd.DataFrame([features], columns=FEATURE_NAMES)   # ← CHANGED
+    probability = model.predict_proba(df)[0][1]
+    return float(probability)

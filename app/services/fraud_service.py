@@ -1,29 +1,20 @@
-from app.ai.feature_engineering import create_features
-from app.ai.risk_scoring import calculate_risk
-from app.ai.anomaly_detection import detect_anomaly
 from app.ml_model import predict_fraud
+from app.ai.anomaly_detection import detect_anomaly
+from app.ai.risk_scoring import calculate_risk
+from app.monitoring.model_metrics import update_metrics
+
 
 def process_transaction(transaction):
+    features_dict = transaction.model_dump()
 
-    features = create_features(
-        transaction.amount,
-        transaction.oldbalanceOrg,
-        transaction.newbalanceOrig
-    )
-
-    probability = predict_fraud(
-        transaction.amount,
-        transaction.type,
-        transaction.oldbalanceOrg,
-        transaction.newbalanceOrig
-    )
-
+    probability = predict_fraud(features_dict)
+    anomaly = detect_anomaly(features_dict)
     risk = calculate_risk(probability)
 
-    anomaly = detect_anomaly(features)
+    update_metrics(probability=probability, anomaly=anomaly)
 
     return {
-        "fraud_probability": probability,
+        "fraud_probability": round(probability, 4),
         "risk_level": risk,
-        "anomaly_detected": anomaly
+        "anomaly_detected": anomaly,
     }

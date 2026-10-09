@@ -1,12 +1,25 @@
-from sklearn.ensemble import IsolationForest
-import numpy as np
+"""
+Isolation Forest inference.
+Returns True if the transaction is an anomaly.
+"""
 
-model = IsolationForest(contamination=0.05)
+import os
+import joblib
+import pandas as pd
 
-def detect_anomaly(features):
+from app.ai.feature_engineering import build_features, FEATURE_NAMES
 
-    # prediction = model.predict(np.array(features).reshape(1, -1))
+MODEL_PATH = os.path.join("model", "anomaly_model.pkl")
 
-    # return prediction[0] == -1
 
-    return False
+if not os.path.exists(MODEL_PATH):
+    raise RuntimeError("Anomaly model not found. Run train_model.py first.")
+
+iso_model = joblib.load(MODEL_PATH)
+
+
+def detect_anomaly(features_dict):
+    features = build_features(features_dict)
+    df = pd.DataFrame([features], columns=FEATURE_NAMES)
+    prediction = iso_model.predict(df)
+    return bool(prediction[0] == -1)
