@@ -1,125 +1,104 @@
-
 🚀 FraudShield AI
 
 An asynchronous credit card fraud detection backend built with FastAPI, Celery, Redis, and Scikit-learn.
 
-FraudShield AI uses supervised machine learning and unsupervised anomaly detection to identify potentially fraudulent credit card transactions.
-
-The models are trained on the Kaggle Credit Card Fraud Detection dataset, which contains 284,807 transactions.
+FraudShield AI combines supervised machine learning and unsupervised anomaly detection to identify potentially fraudulent credit card transactions. It uses the Kaggle Credit Card Fraud Detection dataset containing 284,807 transactions.
 
 ✨ Features
 FastAPI REST API — Submit transactions for asynchronous fraud analysis.
-Celery + Redis — Process machine learning predictions in the background.
+Celery + Redis — Process predictions in the background.
 Dual-model detection — Combines Random Forest classification with Isolation Forest anomaly detection.
-Feature selection — Uses the top 8 features selected from the original 30 features.
-Redis-backed metrics — Shares prediction metrics between the API and Celery workers.
-SQLite database — Stores transaction records.
-Swagger/OpenAPI documentation — Explore and test endpoints interactively.
+Feature selection — Uses eight features selected from the original 30 dataset columns.
+Redis-backed metrics — Shares prediction counters between API and Celery workers.
+SQLite database — Supports local transaction storage.
+Swagger/OpenAPI — Interactive API documentation and testing.
 🏗️ Architecture
-                    ┌──────────────────┐
-                    │      Client      │
-                    └────────┬─────────┘
-                             │
-                       POST /predict
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │    FastAPI API   │
-                    │                  │
-                    │ Returns task_id  │
-                    └────────┬─────────┘
-                             │
-                       Enqueue task
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │      Redis       │
-                    │   Task Broker    │
-                    └────────┬─────────┘
-                             │
-                         Consume task
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │  Celery Worker   │
-                    │                  │
-                    │ ┌──────────────┐ │
-                    │ │ Random Forest│ │
-                    │ └──────────────┘ │
-                    │                  │
-                    │ ┌──────────────┐ │
-                    │ │Isolation      │ │
-                    │ │Forest         │ │
-                    │ └──────────────┘ │
-                    │                  │
-                    │ ┌──────────────┐ │
-                    │ │ Metrics      │ │
-                    │ │ (Redis)      │ │
-                    │ └──────────────┘ │
-                    └────────┬─────────┘
-                             │
-                    Store prediction result
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │   Task Backend   │
-                    │  (Configuration  │
-                    │    dependent)    │
-                    └──────────────────┘
+              Client
+                |
+                | POST /predict
+                v
+          FastAPI API
+        (returns task_id)
+                |
+                | Enqueue task
+                v
+        Redis Task Broker
+                |
+                v
+          Celery Worker
+                |
+         +------+------+
+         |             |
+         v             v
+    Random Forest  Isolation Forest
+         |             |
+         +------+------+
+                |
+                v
+       Risk Assessment
+                |
+                v
+      Prediction Result
+                |
+                v
+        Celery Backend
 
-Client endpoints:
-  GET /tasks/{task_id}
-  GET /metrics
-  GET /
+Redis also stores shared prediction metrics.
 
 
-Note: Redis serves as the Celery broker and stores shared metrics. The actual Celery result backend depends on your application configuration.
+Client endpoints
+
+Method	Endpoint	Description
+POST	/predict	Submit a prediction task
+GET	/tasks/{task_id}	Retrieve task status and result
+GET	/metrics	Retrieve prediction metrics
+GET	/	API health check
+
+Redis serves as the Celery broker and stores shared metrics. Task-result retrieval depends on the configured Celery result backend.
 
 📊 Model Performance
 Random Forest — Supervised Classification
-Metric	Fraud Class
+Metric	Reported score
 Precision	0.9744
 Recall	0.7755
 F1-score	0.8636
 AUC-ROC	0.9531
-Isolation Forest — Unsupervised Anomaly Detection
-Metric	Fraud Class
+Isolation Forest — Anomaly Detection
+Metric	Reported score
 Precision	0.4020
 Recall	0.8163
 F1-score	0.5387
 
-These are the reported evaluation results for this project. Actual performance may vary with the evaluation split, preprocessing, and decision thresholds.
+These are the reported evaluation results for this project. They should be reproduced against a documented evaluation split before being treated as verified model performance.
 
 Why use two models?
+Random Forest: Provides a supervised fraud probability, with relatively high reported precision.
+Isolation Forest: Identifies unusual transactions and may flag fraudulent cases that the classifier misses, at the cost of more false positives.
 
-The two models provide complementary signals:
+A potential production workflow could send transactions flagged by Isolation Forest but not by Random Forest to a manual-review queue.
 
-Random Forest: High precision (0.9744), meaning relatively few of its fraud predictions are false positives. Its recall (0.7755) indicates that some fraudulent transactions are missed.
-Isolation Forest: Higher recall (0.8163), helping flag more potentially fraudulent transactions, but lower precision (0.4020), resulting in more false positives.
-
-A potential production workflow could send transactions flagged by Isolation Forest but not by Random Forest to a manual review queue.
-
-Important: The models' outputs should be combined through an explicitly defined decision policy rather than assuming that either model's prediction alone establishes fraud.
+The two outputs are separate signals. A production decision policy should explicitly define how they are combined.
 
 🎯 Feature Selection
 
-FraudShield AI uses the following eight selected features:
+The API accepts the following eight features:
 
 V14, V10, V12, V4, V17, V3, V11, V16
 
 
-These features are selected based on Random Forest feature importance, reducing the API input from 30 features to 8.
+They were selected using Random Forest feature importance through select_features.py.
 
-The selection process is implemented in select_features.py.
+Feature selection reduces the API input from 30 columns to eight. Training and inference must use the same feature names, order, and preprocessing.
 
-Important: The feature order, preprocessing, and mapping used during training must match the inference pipeline. Feature importance alone does not guarantee that a feature set will generalize to unseen transactions.
+Important: These are PCA-transformed dataset features, not directly interpretable transaction fields such as merchant name or cardholder identity.
 
-📡 API Endpoints
-Method	Endpoint	Description
-POST	/predict	Submit a transaction for asynchronous fraud analysis
-GET	/tasks/{task_id}	Retrieve the status and result of a prediction task
-GET	/metrics	Retrieve prediction metrics
-GET	/	Check API health
+📡 API Usage
+
+Start the application and open:
+
+Swagger UI: http://127.0.0.1:8000/docs
+ReDoc: http://127.0.0.1:8000/redoc
+Health check: http://127.0.0.1:8000/
 1. Submit a prediction
 curl -X POST "http://127.0.0.1:8000/predict" \
   -H "Content-Type: application/json" \
@@ -138,21 +117,24 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 Example response:
 
 {
-  "task_id": "02f240c7-a6e1-4c52-bac7-5419e2595397",
+  "task_id": "example-task-id",
   "message": "Fraud analysis started"
 }
 
 
-The API returns a task ID so you can retrieve the result after background processing.
+The task ID is used to retrieve the result after background processing. The ID above is illustrative.
 
 2. Retrieve the prediction result
-curl "http://127.0.0.1:8000/tasks/02f240c7-a6e1-4c52-bac7-5419e2595397"
+
+Replace the example task ID with the ID returned by /predict.
+
+curl "http://127.0.0.1:8000/tasks/example-task-id"
 
 
 Example response:
 
 {
-  "task_id": "02f240c7-a6e1-4c52-bac7-5419e2595397",
+  "task_id": "example-task-id",
   "status": "SUCCESS",
   "result": {
     "fraud_probability": 0.83,
@@ -162,7 +144,7 @@ Example response:
 }
 
 
-The response above is illustrative. The actual response depends on your implementation and model predictions.
+This response is illustrative; actual predictions depend on the supplied features and trained models.
 
 3. Retrieve prediction metrics
 curl "http://127.0.0.1:8000/metrics"
@@ -180,20 +162,10 @@ Example response:
 }
 
 
-These values are sample output, not live metrics.
+These values are examples, not live metrics.
 
-4. Open the API documentation
-
-Once the application is running, visit:
-
-Swagger UI: http://127.0.0.1:8000/docs
-ReDoc: http://127.0.0.1:8000/redoc
-Health check: http://127.0.0.1:8000/
 ⚙️ Setup and Installation
 Prerequisites
-
-Install the following before starting:
-
 Python 3.10 or another version supported by your dependencies
 Redis Server
 Git
@@ -204,19 +176,19 @@ cd fraudshield-ai
 
 Step 2: Create a virtual environment
 
-Windows — Command Prompt:
+Windows Command Prompt
 
 python -m venv venv
 venv\Scripts\activate
 
 
-Windows — PowerShell:
+Windows PowerShell
 
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 
 
-Linux/macOS:
+Linux/macOS
 
 python3 -m venv venv
 source venv/bin/activate
@@ -227,37 +199,30 @@ pip install -r requirements.txt
 
 Step 4: Download the dataset
 
-Download the Kaggle Credit Card Fraud Detection dataset.
+Download the Kaggle Credit Card Fraud Detection dataset:
 
-Place the downloaded CSV file at:
+https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+
+Place the CSV file at:
 
 data/creditcard.csv
 
-
-Make sure the data directory exists before placing the file there.
-
-Step 5: Select the features
-
-Run the feature selection script:
-
+Step 5: Select features
 python select_features.py
 
 
-Verify that the script produces the feature metadata or other artifacts expected by your training pipeline.
+This script ranks the original dataset features by Random Forest importance. Ensure that its selected feature list matches FEATURE_NAMES in app/ai/feature_engineering.py before training.
 
 Step 6: Train the models
 python train_model.py
 
 
-Verify that the trained model files are saved to the expected locations:
+The training script should generate:
 
 model/
 ├── fraud_model.pkl
 ├── anomaly_model.pkl
 └── MODEL_METADATA.json
-
-
-The exact output depends on how your training scripts are implemented.
 
 Step 7: Start Redis
 
@@ -266,141 +231,104 @@ If Redis is installed as a Windows executable:
 redis-server.exe
 
 
-If Redis is running as a service or in Docker, use that existing instance instead.
-
-Make sure the Redis connection settings in your application match the running server.
+Alternatively, use your existing Redis service or Docker instance. Ensure the application's connection settings match the running instance.
 
 Step 8: Start the Celery worker
 
-Open a new terminal, activate the virtual environment, and run:
+Open another terminal, activate the virtual environment, and run:
 
 celery -A app.core.celery_app worker --loglevel=info --pool=solo
 
 
-The solo pool is useful for local Windows development. On supported production platforms, a different worker pool may be appropriate.
+The solo pool is useful for local Windows development.
 
-Step 9: Start the FastAPI server
+Step 9: Start FastAPI
 
 Open another terminal, activate the virtual environment, and run:
 
 uvicorn app.main:app --reload
 
 
-The API should now be available at:
+Visit http://127.0.0.1:8000/docs to test the endpoints.
 
-http://127.0.0.1:8000
-
-
-Open the Swagger documentation to test the endpoints:
-
-http://127.0.0.1:8000/docs
-
-
-Troubleshooting: If predictions remain pending, verify that Redis, the Celery worker, and the API are running and that the Celery broker and result backend settings are configured correctly.
+Troubleshooting: If tasks remain pending, check Redis connectivity, the Celery worker logs, and the configured broker and result backend.
 
 📁 Project Structure
 FraudShieldAI/
-│
-├── data/
-│   └── creditcard.csv
-│
-├── model/
-│   ├── fraud_model.pkl
-│   ├── anomaly_model.pkl
-│   └── MODEL_METADATA.json
-│
 ├── app/
-│   ├── main.py
-│   ├── schemas.py
-│   ├── models.py
-│   ├── database.py
-│   ├── crud.py
-│   ├── ml_model.py
-│   ├── redis_client.py
-│   │
 │   ├── ai/
 │   │   ├── feature_engineering.py
 │   │   ├── anomaly_detection.py
 │   │   └── risk_scoring.py
-│   │
 │   ├── api/
 │   │   └── fraud_routes.py
-│   │
 │   ├── core/
 │   │   └── celery_app.py
-│   │
+│   ├── monitoring/
+│   │   └── model_metrics.py
 │   ├── services/
 │   │   └── fraud_service.py
-│   │
 │   ├── tasks/
 │   │   └── fraud_tasks.py
-│   │
-│   └── monitoring/
-│       └── model_metrics.py
-│
+│   ├── crud.py
+│   ├── database.py
+│   ├── main.py
+│   ├── ml_model.py
+│   ├── models.py
+│   ├── redis_client.py
+│   └── schemas.py
+├── model/
+│   ├── fraud_model.pkl
+│   ├── anomaly_model.pkl
+│   └── MODEL_METADATA.json
 ├── select_features.py
 ├── train_model.py
 ├── requirements.txt
 └── README.md
 
-Key components
-File or directory	Responsibility
-app/main.py	Initializes the FastAPI application
-app/schemas.py	Defines request and response schemas
-app/database.py	Configures database connectivity
-app/crud.py	Handles database operations
-app/ml_model.py	Runs Random Forest inference
-app/ai/feature_engineering.py	Prepares model input features
-app/ai/anomaly_detection.py	Runs Isolation Forest inference
-app/ai/risk_scoring.py	Maps prediction scores to risk levels
-app/core/celery_app.py	Configures Celery
-app/tasks/fraud_tasks.py	Defines background prediction tasks
-app/services/fraud_service.py	Coordinates fraud analysis
-app/monitoring/model_metrics.py	Tracks prediction metrics
-select_features.py	Performs feature importance analysis
-train_model.py	Trains and saves the models
+
+The dataset under data/ is kept locally and is not required to be committed to Git.
+
 🔬 Production Design
 
-The current project accepts eight precomputed features directly through the API. This keeps the model inference pipeline straightforward to test, but it is not a complete real-world transaction ingestion system.
+The current API accepts eight precomputed model features. It demonstrates asynchronous inference, but it is not a complete real-world payment ingestion system.
 
-A more complete production architecture could use the following flow:
+Possible future production improvements include:
 
-Transaction ingestion: Receive transaction details such as amount, merchant, timestamp, and payment metadata.
-Feature engineering: Generate model features through a streaming or online feature pipeline.
-Feature storage: Store and retrieve features using a feature store such as Feast, backed by suitable online storage.
-Model inference: Retrieve the appropriate features and evaluate the transaction using the fraud detection models.
-Decision orchestration: Combine model outputs, business rules, and risk thresholds.
-Result persistence: Store the prediction, risk score, and relevant transaction metadata.
-Monitoring: Track latency, prediction quality, data drift, and operational failures.
+Transaction ingestion and online feature engineering.
+A feature store such as Feast.
+Durable transaction and prediction storage.
+Explicit decision rules combining classifier and anomaly signals.
+Data-drift detection and model-quality monitoring.
+Structured logging, alerting, authentication, and rate limiting.
+Model versioning and reproducible training.
+PostgreSQL and database migrations for larger workloads.
+Docker Compose for repeatable deployment.
 
-Possible technologies include Kafka and Flink for streaming, Redis for online data access, PostgreSQL for persistent records, and Prometheus with Grafana for monitoring.
-
-The existing FastAPI, Celery, and Redis architecture provides a starting point for asynchronous inference, but production readiness would require additional reliability, security, and operational controls.
+Potential technologies include Kafka and Flink for streaming, PostgreSQL for persistent storage, and Prometheus with Grafana for monitoring.
 
 ⚠️ Known Limitations
-Anonymized features: The dataset uses PCA-transformed features (V1–V28), making individual features difficult to interpret.
-Limited generalization: The dataset may not represent fraud patterns across other financial institutions, regions, or time periods.
-Class imbalance: Fraud represents approximately 0.173% of the dataset, so evaluation must account for the imbalance.
-Threshold sensitivity: Precision and recall can change significantly with the classification threshold.
-Evaluation methodology: Performance depends on the train/test split, preprocessing, and validation strategy. Reported metrics should be verified against a reproducible evaluation.
-Operational metrics: Redis-backed counters are useful for a demonstration but are not a substitute for durable monitoring and alerting.
-SQLite scalability: SQLite is suitable for local development and demos, but PostgreSQL may be a better choice for concurrent production workloads.
-Explainability: Anomaly scores and anonymized features do not automatically explain why a transaction is suspicious.
-Security: A production API needs authentication, authorization, rate limiting, secure configuration, and appropriate handling of sensitive data.
+Anonymized features: PCA-transformed variables are difficult to interpret.
+Limited generalization: The dataset may not represent current fraud patterns across different financial institutions.
+Class imbalance: Fraud accounts for approximately 0.173% of the dataset.
+Threshold sensitivity: Precision and recall depend on the decision threshold.
+Evaluation: Reported metrics need reproducible validation and should not be assumed to describe future performance.
+Monitoring: Redis counters are useful for a demonstration but are not a replacement for durable monitoring.
+Explainability: Anomaly flags do not automatically explain why a transaction is suspicious.
+Security: Production deployments require appropriate authentication, authorization, rate limiting, and secret management.
 🚀 Future Improvements
 Build a Next.js dashboard for transaction visualization.
-Add data drift detection and model performance monitoring.
+Add data-drift detection and model monitoring.
 Replace SQLite with PostgreSQL and Alembic migrations.
-Add a Dockerfile and Docker Compose configuration.
-Add unit and integration tests for feature engineering, model inference, API routes, and background tasks.
-Integrate Prometheus and Grafana for monitoring and alerting.
+Add Docker and Docker Compose.
+Expand unit and integration test coverage.
+Integrate Prometheus and Grafana.
 Add structured logging and centralized error handling.
-Implement model versioning and reproducible training.
-Add transaction-level explanations and audit logs.
-Add configurable risk thresholds and manual review workflows.
+Implement model versioning and audit logs.
+Introduce configurable risk thresholds and manual-review workflows.
 📄 Dataset
 
-This project uses the publicly available Kaggle Credit Card Fraud Detection dataset:
+This project uses the Kaggle Credit Card Fraud Detection dataset:
 
 https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
 
@@ -408,12 +336,6 @@ Refer to the dataset's terms and documentation for applicable usage conditions.
 
 ⚖️ Disclaimer
 
-FraudShield AI is an educational and experimental project intended to demonstrate asynchronous machine learning inference and fraud detection techniques.
+FraudShield AI is an educational and experimental project demonstrating asynchronous machine-learning inference and fraud detection.
 
 Its predictions should not be treated as definitive evidence of fraud or used as the sole basis for financial decisions without appropriate validation, monitoring, and human oversight.
-
-👨‍💻 Getting Started
-
-Clone the repository, install the dependencies, prepare the dataset, train the models, start Redis and the Celery worker, and launch the FastAPI application.
-
-Then visit http://127.0.0.1:8000/docs to explore the API.
