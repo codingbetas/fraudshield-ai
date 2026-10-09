@@ -1,0 +1,14 @@
+{
+  "feature_names": [
+    "V14",
+    "V10",
+    "V12",
+    "V4",
+    "V17",
+    "V3",
+    "V11",
+    "V16"
+  ],
+  "dataset": "Kaggle Credit Card Fraud",
+  "random_state": 42
+}
