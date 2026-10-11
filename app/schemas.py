@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
-from pydantic import BaseModel
-
 
 class TransactionCreate(BaseModel):
     V14: float
@@ -12,11 +10,3 @@ class TransactionCreate(BaseModel):
     V3: float
     V11: float
     V16: float
-
-class TransactionResponse(TransactionCreate):
-    id: int
-    is_fraud: bool
-
-class Config:
-    from_attributes = True
-

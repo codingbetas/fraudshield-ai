@@ -9,6 +9,7 @@ FraudShield AI combines supervised machine learning and unsupervised anomaly det
 ![Celery](https://img.shields.io/badge/Celery-37814A)
 ![Redis](https://img.shields.io/badge/Redis-DC382D)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E)
+![Tests](https://img.shields.io/badge/tests-11%20passing-brightgreen)
 
 ---
 
@@ -24,6 +25,7 @@ FraudShield AI combines supervised machine learning and unsupervised anomaly det
 - [Project Structure](#-project-structure)
 - [Production Design](#-production-design)
 - [Known Limitations](#️-known-limitations)
+- [Testing](#testing)
 - [Future Improvements](#-future-improvements)
 - [Dataset](#-dataset)
 - [Disclaimer](#️-disclaimer)
@@ -402,6 +404,21 @@ Potential technologies include **Kafka** and **Flink** for streaming, **PostgreS
 - **Security:** Production deployments require appropriate authentication, authorization, rate limiting, and secret management.
 
 ---
+
+## Testing
+
+FraudShield AI uses pytest. Celery runs in eager mode during tests,
+so no worker is required — but Redis must be running for metrics tests.
+
+Install test dependencies:
+
+    pip install -r requirements-dev.txt
+
+Run the suite:
+
+    pytest tests/ -v
+
+Expected output: 11 passed.
 
 ## 🚀 Future Improvements
 
