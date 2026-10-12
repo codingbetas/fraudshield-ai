@@ -1,10 +1,16 @@
+import os
 from celery import Celery
+from dotenv import load_dotenv
+
+load_dotenv()
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 celery_app = Celery(
     "fraudshield",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0",
-    include=["app.tasks.fraud_tasks"]   # 👈 important
+    broker=REDIS_URL,
+    backend=REDIS_URL,
+    include=["app.tasks.fraud_tasks"],
 )
 
 celery_app.conf.update(
